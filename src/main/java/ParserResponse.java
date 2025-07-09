@@ -1,5 +1,3 @@
-package com.zesta;
-
 public class ParserResponse {
     CommandType commandType;
     Integer index;

@@ -1,5 +1,3 @@
-package com.zesta;
-
 public class Parser {
     public ParserResponse parse(String line){
         String[] parts = line.split(" ");
@@ -14,7 +12,7 @@ public class Parser {
             index = Integer.parseInt(parts[2]);
         }
         CommandType type = CommandType.valueOf(command.toUpperCase());
-        System.out.println("Line:"+ line + " , Command Type: " + type);
+//        System.out.println("Line:"+ line + " , Command Type: " + type);
         return new ParserResponse(type,index,memorySegment);
 //        if(parts.length == 1) {
 //            return new ParserResponse(type,parts);

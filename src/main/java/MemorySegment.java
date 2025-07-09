@@ -1,5 +1,3 @@
-package com.zesta;
-
 public enum MemorySegment {
     LOCAL,
     ARGUMENT,
