@@ -14,11 +14,11 @@ public class VMTranslator {
     public static void main(String[] args) throws IOException {
         System.out.printf("Hello and welcome!" + args[0]);
         String basePath = "C:\\Users\\Admin\\Downloads\\Compressed\\nand2tetris\\nand2tetris\\projects\\8\\FunctionCalls\\FibonacciElement\\";
-        Path inputFile = Paths.get(basePath + args[0]);
+        Path inputFile = Paths.get( args[0]);
         String filename = args[0].split("\\.")[0].split("/")[0];
 //        System.out.println("\nFilename: " + filename);
-//        Path outPutFile = Files.createFile(Paths.get(filename + "/" + filename+".asm"));
-        Path outPutFile = Files.createFile(Paths.get(filename+".asm"));
+        Path outPutFile = Files.createFile(Paths.get(filename + "/" + filename+".asm"));
+//        Path outPutFile = Files.createFile(Paths.get(filename+".asm"));
 
         CodeGenerator codeGenerator = new CodeGenerator(filename);
         Files.readAllLines(inputFile).forEach(line -> {

@@ -18,7 +18,7 @@ public class Parser {
             index = Integer.parseInt(parts[2]);
         }
         System.out.println("Line:"+ line + " , Command Type: " + type);
-        return isBranchingFunction(type) ? new ParserResponse(type,index,memorySegment): new ParserResponse(type,index,functionName);
+        return isBranchingFunction(type) ? new ParserResponse(type,index,functionName): new ParserResponse(type,index,memorySegment);
 //        if(parts.length == 1) {
 //            return new ParserResponse(type,parts);
 //        }
@@ -34,13 +34,19 @@ public class Parser {
     }
 
     boolean isBranchingFunction(CommandType type){
-        switch(type){
-            case FUNCTION, GOTO,IF_GOTO,LABEL,CALL -> {
+        switch (type) {
+            case FUNCTION:
                 return true;
-            }
-            default -> {
+            case GOTO:
+                return true;
+            case IF_GOTO:
+                return true;
+            case LABEL:
+                return true;
+            case CALL:
+                return true;
+            default:
                 return false;
-            }
         }
     }
 }

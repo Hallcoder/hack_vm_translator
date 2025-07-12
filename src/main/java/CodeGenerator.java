@@ -7,9 +7,12 @@ public class CodeGenerator {
    private int eq=0;
    private int gt=0;
    private int lt=0;
-    private int and=0;
+   private int LCL = 1;
+   private int ARG = 2;
+   private int THIS =3 ;
+   private int THAT = 4;
+   private int returnLabelCounter = 0;
    private final String filename;
-    int nextVariableAddress = 1;
 
     private final HashMap<String, String> symbols = new HashMap<>();
    private static final Set<MemorySegment> firstClassSegments = EnumSet.of(
@@ -54,6 +57,21 @@ public class CodeGenerator {
                return codeForLogicalOperator(response);
            case NEG:
                return codeForLogicalOperator(response);
+           case FUNCTION:
+               return codeForFunctionDeclaration(response);
+           case CALL:
+               return codeForFunctionCalling(response);
+           case RETURN:
+               return codeForFunctionReturning(getReturnLabel(response.functionOrLabelName));
+           case LABEL:
+               return codeForLabelGeneration(response);
+           case GOTO:
+               return List.of(new String[]{"@"+response.functionOrLabelName,"0;JMP"});
+           case IF_GOTO:
+               List<String> result = new ArrayList<>();
+               result.addAll(getStackPushAndIncreasePointerCode());
+               result.addAll(List.of(new String[]{"@1", "D=D-A", "@" + response.functionOrLabelName, "D;JEQ"}));
+               return result;
            default:
                    return List.of();
        }
@@ -244,8 +262,98 @@ public class CodeGenerator {
        return List.of(new String[]{"@SP", "AM=M-1", "D=M"});
     }
 
+  //function Foo 2 => 2 local variables
+   private List<String> codeForFunctionDeclaration(ParserResponse response){
+       List<String> result = new ArrayList<>();
+       result.addAll(List.of(new String[]{"("+response.functionOrLabelName+")",}));
+       result.addAll(getLocalInitializationCode(response.index));
+       return result;
+   }
+   // call Foo 4
+   private List<String> codeForFunctionCalling(ParserResponse response){
+       String returnLabel = getReturnLabel(response.functionOrLabelName);
+       List<String> result = new ArrayList<>();
+       result.addAll(getPreFunctionCallCode(returnLabel,response.index));
+       result.add("goto "+response.functionOrLabelName);
+       result.add("("+returnLabel+")");
+       returnLabelCounter++;
+       return result;
+   }
+   private List<String> codeForFunctionReturning(String returnLabel){
+       List<String> result = new ArrayList<>();
+       result.add("@LCL");
+       result.add("D=M");
+       result.add("@endframe");
+       result.add("M=D");
+       result.add("@"+5);
+       result.add("D=D-M");
+       result.add("@R13");
+       result.add("M=D");
+       result.add("A=M");
+       result.add("D=M");
+       result.add("@retaddr");
+       result.add("M=D");
+       result.addAll(getStackPopAndDecreasePointerCode());
+       result.add("@ARG");
+       result.add("M=D");
+       result.add("D=M+1");
+       result.addAll(getStackPushAndIncreasePointerCode());
+       result.addAll(getCallerFrameRestore());
+       result.add("goto " + returnLabel);
+       return result;
+   }
 
+   private List<String> codeForLabelGeneration(ParserResponse response){
+       return new ArrayList<>(List.of(new String[]{"(" + response.functionOrLabelName + ")",}));
+   }
 
+   private List<String> getCallerFrameRestore(){
+       List<String> result = new ArrayList<>();
+       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@THAT","M=D"}));
+       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@THIS","M=D"}));
+       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@ARG","M=D"}));
+       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@LCL","M=D"}));
+       return result;
+   }
+
+   private List<String> getLocalInitializationCode(int count){
+       List<String> result = new ArrayList<>();
+       result.add("D=0");
+       for(int i = 0; i < count; i++){
+           result.addAll(getStackPushAndIncreasePointerCode());
+       }
+       return result;
+   }
+
+   private List<String> getPreFunctionCallCode(String returnAddressLabel,int argN){
+       List<String> result = new ArrayList<>();
+       result.addAll(List.of(new String[]{"@LCL","D=A"}));
+       result.addAll(getStackPushAndIncreasePointerCode());
+       result.addAll(List.of(new String[]{"@ARG","D=A"}));
+       result.addAll(getStackPushAndIncreasePointerCode());
+       result.addAll(List.of(new String[]{"@THIS","D=A"}));
+       result.addAll(getStackPushAndIncreasePointerCode());
+       result.addAll(List.of(new String[]{"@THAT","D=A"}));
+       result.addAll(getStackPushAndIncreasePointerCode());
+       result.addAll(getArgRepositionCode(argN));
+       result.addAll(List.of(new String[]{"@SP","D=M","@LCL","M=D"}));
+       return result;
+   }
+   //ARG=SP-5-ArgN  240-(5+10)
+   private List<String> getArgRepositionCode(int argN){
+       List<String> result = new ArrayList<>();
+       int argDeductionValue = 5 + argN;
+       result.add("@"+argDeductionValue);
+       result.add("D=A");
+       result.add("SP");
+       result.add("D=A-D");
+       result.add("@ARG");
+       result.add("M=D");
+       return result;
+   }
+   private String getReturnLabel(String functionName){
+       return functionName+"_"+returnLabelCounter;
+   }
 
 
 }
