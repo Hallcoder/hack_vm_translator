@@ -9,7 +9,13 @@ public enum CommandType {
     LT("lt"),
     GT("gt"),
     EQ("eq"),
-    NOT("not");
+    NOT("not"),
+    FUNCTION("function"),
+    CALL("call"),
+    RETURN("return"),
+    GOTO("goto"),
+    IF_GOTO("if-goto"),
+    LABEL("label");
 
     private final String displayName;
 
@@ -23,3 +29,6 @@ public enum CommandType {
 
 }
 
+// function foo 3
+// call foo 2
+//return

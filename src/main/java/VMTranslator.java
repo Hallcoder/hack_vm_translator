@@ -13,12 +13,12 @@ public class VMTranslator {
     private static Parser parser = new Parser();
     public static void main(String[] args) throws IOException {
         System.out.printf("Hello and welcome!" + args[0]);
-        String basePath = "C:\\Users\\Admin\\Downloads\\Compressed\\nand2tetris\\nand2tetris\\projects\\7\\StackArithmetic\\StackTest\\";
-        Path inputFile = Paths.get( args[0]);
+        String basePath = "C:\\Users\\Admin\\Downloads\\Compressed\\nand2tetris\\nand2tetris\\projects\\8\\FunctionCalls\\FibonacciElement\\";
+        Path inputFile = Paths.get(basePath + args[0]);
         String filename = args[0].split("\\.")[0].split("/")[0];
-        System.out.println("\nFilename: " + filename);
-        Path outPutFile = Files.createFile(Paths.get(filename + "/" + filename+".asm"));
-//        Path outPutFile = Files.createFile(Paths.get(filename+".asm"));
+//        System.out.println("\nFilename: " + filename);
+//        Path outPutFile = Files.createFile(Paths.get(filename + "/" + filename+".asm"));
+        Path outPutFile = Files.createFile(Paths.get(filename+".asm"));
 
         CodeGenerator codeGenerator = new CodeGenerator(filename);
         Files.readAllLines(inputFile).forEach(line -> {
@@ -44,7 +44,7 @@ public class VMTranslator {
         // remove all whitespace
         String cleanedLine = line   // remove comments
                 .replaceAll("//.*", "").trim();
-        System.out.println("Original line: " + line + " cleaned line: " + cleanedLine);
+//        System.out.println("Original line: " + line + " cleaned line: " + cleanedLine);
         // remove all whitespace
         return cleanedLine;
     }
