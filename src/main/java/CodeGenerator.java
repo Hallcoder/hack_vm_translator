@@ -12,7 +12,7 @@ public class CodeGenerator {
    private int THIS =3 ;
    private int THAT = 4;
    private int returnLabelCounter = 0;
-   private final String filename;
+   private String filename;
 
     private final HashMap<String, String> symbols = new HashMap<>();
    private static final Set<MemorySegment> firstClassSegments = EnumSet.of(
@@ -33,49 +33,151 @@ public class CodeGenerator {
        symbols.put(MemorySegment.POINTER.name(), "POINTER");
        symbols.put(MemorySegment.TEMP.name(), "TEMP");
    }
-   public List<String> generateCode(ParserResponse response){
-       switch(response.commandType){
-           case PUSH:
-               return codeForStackPush(response);
-           case POP:
-               return codeForStackPop(response);
-           case ADD:
-               return codeForAddOrSub(response,true);
-           case SUB:
-               return codeForAddOrSub(response,false);
-           case NOT:
-               return codeForLogicalOperator(response);
-           case AND:
-               return codeForLogicalOperator(response);
-           case LT:
-               return codeForLogicalOperator(response);
-           case GT:
-               return codeForLogicalOperator(response);
-           case EQ:
-               return codeForLogicalOperator(response);
-           case OR:
-               return codeForLogicalOperator(response);
-           case NEG:
-               return codeForLogicalOperator(response);
-           case FUNCTION:
-               return codeForFunctionDeclaration(response);
-           case CALL:
-               return codeForFunctionCalling(response);
-           case RETURN:
-               return codeForFunctionReturning(getReturnLabel(response.functionOrLabelName));
-           case LABEL:
-               return codeForLabelGeneration(response);
-           case GOTO:
-               return List.of(new String[]{"@"+response.functionOrLabelName,"0;JMP"});
-           case IF_GOTO:
-               List<String> result = new ArrayList<>();
-               result.addAll(getStackPushAndIncreasePointerCode());
-               result.addAll(List.of(new String[]{"@1", "D=D-A", "@" + response.functionOrLabelName, "D;JEQ"}));
-               return result;
-           default:
-                   return List.of();
-       }
-   }
+    public void setFilename(String newFilename) {
+        this.filename = newFilename;
+    }
+    public List<String> generateCode(ParserResponse response){
+        List<String> combinedCode = new ArrayList<>();
+
+        switch(response.commandType){
+            case PUSH:
+                combinedCode.addAll(codeForStackPush(response));
+                break;
+            case POP:
+                combinedCode.addAll(codeForStackPop(response));
+                break;
+            case ADD:
+                combinedCode.addAll(codeForAddOrSub(response,true));
+                break;
+            case SUB:
+                combinedCode.addAll(codeForAddOrSub(response,false));
+                break;
+            case NOT:
+                combinedCode.addAll(codeForLogicalOperator(response));
+
+                break;
+            case AND:
+                combinedCode.addAll(codeForLogicalOperator(response));
+                break;
+            case LT:
+                combinedCode.addAll(codeForLogicalOperator(response));
+                break;
+            case GT:
+                combinedCode.addAll(codeForLogicalOperator(response));
+                break;
+            case EQ:
+                combinedCode.addAll(codeForLogicalOperator(response));
+                break;
+            case OR:
+                combinedCode.addAll(codeForLogicalOperator(response));
+                break;
+            case NEG:
+                combinedCode.addAll(codeForLogicalOperator(response));
+                break;
+            case FUNCTION:
+                combinedCode.addAll(codeForFunctionDeclaration(response));
+                break;
+            case CALL:
+                combinedCode.addAll(codeForFunctionCalling(response));
+                break;
+            case RETURN:
+                combinedCode.addAll(codeForFunctionReturning());
+                break;
+            case LABEL:
+                combinedCode.addAll(codeForLabelGeneration(response));
+                break;
+            case GOTO:
+                combinedCode.addAll(List.of(
+                        "@" + response.functionOrLabelName,
+                        "0;JMP"
+                ));
+                break;
+            case IF_GOTO:
+                combinedCode.addAll(getStackPopAndDecreasePointerCode());
+                combinedCode.addAll(List.of(
+                        "@" + response.functionOrLabelName,
+                        "D;JNE"
+                ));
+                break;
+            default:
+                break;
+        }
+        return combinedCode;
+    }
+    public static List<String> generateBootstrapCode() {
+        List<String> bootstrapCode = new ArrayList<>();
+
+        // Set SP to 256
+        bootstrapCode.add("@256");
+        bootstrapCode.add("D=A");
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("M=D");
+
+        // Call Sys.init 0
+        // Push return address
+        bootstrapCode.add("@Sys.init$ret.0");
+        bootstrapCode.add("D=A");
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("AM=M+1");
+        bootstrapCode.add("A=A-1");
+        bootstrapCode.add("M=D");
+
+        // Push LCL
+        bootstrapCode.add("@LCL");
+        bootstrapCode.add("D=M");
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("AM=M+1");
+        bootstrapCode.add("A=A-1");
+        bootstrapCode.add("M=D");
+
+        // Push ARG
+        bootstrapCode.add("@ARG");
+        bootstrapCode.add("D=M");
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("AM=M+1");
+        bootstrapCode.add("A=A-1");
+        bootstrapCode.add("M=D");
+
+        // Push THIS
+        bootstrapCode.add("@THIS");
+        bootstrapCode.add("D=M");
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("AM=M+1");
+        bootstrapCode.add("A=A-1");
+        bootstrapCode.add("M=D");
+
+        // Push THAT
+        bootstrapCode.add("@THAT");
+        bootstrapCode.add("D=M");
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("AM=M+1");
+        bootstrapCode.add("A=A-1");
+        bootstrapCode.add("M=D");
+
+        // Reposition ARG for Sys.init
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("D=M");
+        bootstrapCode.add("@5");
+        bootstrapCode.add("D=D-A");
+        bootstrapCode.add("@ARG");
+        bootstrapCode.add("M=D");
+
+        // Set LCL for Sys.init
+        bootstrapCode.add("@SP");
+        bootstrapCode.add("D=M");
+        bootstrapCode.add("@LCL");
+        bootstrapCode.add("M=D");
+
+        // Go to Sys.init
+        bootstrapCode.add("@Sys.init");
+        bootstrapCode.add("0;JMP");
+
+        // Return address label for Sys.init
+        bootstrapCode.add("(Sys.init$ret.0)");
+
+        return bootstrapCode;
+    }
+
    public List<String> codeForStackPush(ParserResponse response){
        List<String> result = new ArrayList<>();
       if(firstClassSegments.contains(response.memorySegment)){
@@ -274,19 +376,19 @@ public class CodeGenerator {
        String returnLabel = getReturnLabel(response.functionOrLabelName);
        List<String> result = new ArrayList<>();
        result.addAll(getPreFunctionCallCode(returnLabel,response.index));
-       result.add("goto "+response.functionOrLabelName);
+       result.add("@" + response.functionOrLabelName);
+       result.add("0;JMP");
        result.add("("+returnLabel+")");
-       returnLabelCounter++;
        return result;
    }
-   private List<String> codeForFunctionReturning(String returnLabel){
+   private List<String> codeForFunctionReturning(){
        List<String> result = new ArrayList<>();
        result.add("@LCL");
        result.add("D=M");
        result.add("@endframe");
        result.add("M=D");
        result.add("@"+5);
-       result.add("D=D-M");
+       result.add("D=D-A");
        result.add("@R13");
        result.add("M=D");
        result.add("A=M");
@@ -295,24 +397,29 @@ public class CodeGenerator {
        result.add("M=D");
        result.addAll(getStackPopAndDecreasePointerCode());
        result.add("@ARG");
+       result.add("A=M");
        result.add("M=D");
+       result.add("@ARG");
        result.add("D=M+1");
-       result.addAll(getStackPushAndIncreasePointerCode());
+       result.add("@SP");
+       result.add("M=D");
        result.addAll(getCallerFrameRestore());
-       result.add("goto " + returnLabel);
+       result.add("@retaddr");
+       result.add("A=M");
+       result.add("0;JMP");
        return result;
    }
 
    private List<String> codeForLabelGeneration(ParserResponse response){
-       return new ArrayList<>(List.of(new String[]{"(" + response.functionOrLabelName + ")",}));
+       return new ArrayList<>(List.of(new String[]{"(" + response.functionOrLabelName + ")"}));
    }
 
    private List<String> getCallerFrameRestore(){
        List<String> result = new ArrayList<>();
-       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@THAT","M=D"}));
-       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@THIS","M=D"}));
-       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@ARG","M=D"}));
-       result.addAll(List.of(new String[]{"@endframe","AD=M-1","@LCL","M=D"}));
+       result.addAll(List.of(new String[]{"@endframe","AM=M-1","D=M","@THAT","M=D"}));
+       result.addAll(List.of(new String[]{"@endframe","AM=M-1","D=M","@THIS","M=D"}));
+       result.addAll(List.of(new String[]{"@endframe","AM=M-1","D=M","@ARG","M=D"}));
+       result.addAll(List.of(new String[]{"@endframe","AM=M-1","D=M","@LCL","M=D"}));
        return result;
    }
 
@@ -325,15 +432,18 @@ public class CodeGenerator {
        return result;
    }
 
-   private List<String> getPreFunctionCallCode(String returnAddressLabel,int argN){
+   private List<String> getPreFunctionCallCode(String returnAddressLabel, int argN){
        List<String> result = new ArrayList<>();
-       result.addAll(List.of(new String[]{"@LCL","D=A"}));
+       result.add("@"+returnAddressLabel);
+       result.add("D=A");
        result.addAll(getStackPushAndIncreasePointerCode());
-       result.addAll(List.of(new String[]{"@ARG","D=A"}));
+       result.addAll(List.of(new String[]{"@LCL","D=M"}));
        result.addAll(getStackPushAndIncreasePointerCode());
-       result.addAll(List.of(new String[]{"@THIS","D=A"}));
+       result.addAll(List.of(new String[]{"@ARG","D=M"}));
        result.addAll(getStackPushAndIncreasePointerCode());
-       result.addAll(List.of(new String[]{"@THAT","D=A"}));
+       result.addAll(List.of(new String[]{"@THIS","D=M"}));
+       result.addAll(getStackPushAndIncreasePointerCode());
+       result.addAll(List.of(new String[]{"@THAT","D=M"}));
        result.addAll(getStackPushAndIncreasePointerCode());
        result.addAll(getArgRepositionCode(argN));
        result.addAll(List.of(new String[]{"@SP","D=M","@LCL","M=D"}));
@@ -345,14 +455,16 @@ public class CodeGenerator {
        int argDeductionValue = 5 + argN;
        result.add("@"+argDeductionValue);
        result.add("D=A");
-       result.add("SP");
-       result.add("D=A-D");
+       result.add("@SP");
+       result.add("D=M-D");
        result.add("@ARG");
        result.add("M=D");
        return result;
    }
    private String getReturnLabel(String functionName){
-       return functionName+"_"+returnLabelCounter;
+       String label  =  functionName+"_"+returnLabelCounter;
+       returnLabelCounter++;
+       return label;
    }
 
 
